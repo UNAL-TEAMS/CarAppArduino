@@ -18,41 +18,65 @@ uint8_t keyCode;
 //----GENERAL----
 unsigned long count; 
 
-void printSerial(String str){
-  SerialESP8266.println(str);
-  Serial.println(str);
-  if (SerialESP8266.available()) {
-    Serial.write(SerialESP8266.read());
-  }
+
+void sendToEsp8266(String toSend){
+    SerialESP8266.println(toSend);
+    delay(300);
 }
 
-void setupWeb(){
-  SerialESP8266.begin(9600);
-  Serial.begin(9600);
-  SerialESP8266.setTimeout(2000);
-  
+void setupWeb(){  
   //Verificamos si el ESP8266 responde
-  printSerial("AT");
-  printSerial("AT+CWMODE=1");  
-  printSerial("AT+CWJAP=\"FLIASMARIAGUERR\",\"GNLCW151212**\"");
-  SerialESP8266.setTimeout(10000); //Aumentar si demora la conexion
-  printSerial("AT+CIPMUX=0");
-  printSerial("AT+CIPSTART=\"TCP\",\"localhost\",12345");
-  printSerial("AT+CIPSEND=83");
+  sendToEsp8266("AT");
+  if(!SerialESP8266.find("OK")){
+    Serial.println("ERROR WITH ESP8266");
+    return;  
+  }
+  Serial.println("Conection with ESP8266");
+  sendToEsp8266("AT+CWMODE=1");
+  if(!SerialESP8266.find("OK")){
+    Serial.println("Error on CWMODE");
+    return;  
+  }
+  sendToEsp8266("AT+CWJAP=\"UNAL\",\"\"");
+  if(!SerialESP8266.find("OK")){
+    Serial.println("Error conecting to WIFI");
+    return;  
+  }
+  Serial.println("Conected to wifi");
+
+  sendToEsp8266("AT+CIPSTART=\"TCP\",\"10.203.177.80\",12345");
+  if(!SerialESP8266.find("OK")){
+    Serial.println("Error conectiong to TCP");
+    return;  
+  }
+  Serial.println("Conected to TCP");
+  String req = "GET /device/test\nHost: 10.203.177.80\n\n";
+
+  sendToEsp8266("AT+CIPSEND=" + String(req.length()));
+  if(!SerialESP8266.find(">")){
+    Serial.println("Error sending size");
+    return;  
+  }
+  sendToEsp8266(req);
+  
+  
+  
+  
 }
 
 void setup() {
-  /*setupWeb();
-  
+  SerialESP8266.begin(9600);
+  Serial.begin(9600);
+  SerialESP8266.setTimeout(2000);
+  setupWeb();
+  /*
   u8g.setFont(u8g_font_osr29);
   //u8g.setFont(u8g_font_9x18);
   button.begin();
   keyCode = NONE;
 
   count = 0;*/
-  SerialESP8266.begin(9600);
-  Serial.begin(9600);
-  SerialESP8266.setTimeout(2000);
+
 }
 
 void sendData(){

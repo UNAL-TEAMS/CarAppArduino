@@ -1,0 +1,15 @@
+GET /php/ejemplos/ej10destino.php?a=23&b=56 HTTP/1.1
+www.aprende-web.net
+
+169.254.13.201:12345/device/test
+
+GET /device/test
+Host: 192.168.43.70
+
+
+
+
+AT+CIPSTART="TCP","192.168.43.70",12345
+AT+CIPSEND=41
+GET /device/test
+Host: 10.203.177.80
