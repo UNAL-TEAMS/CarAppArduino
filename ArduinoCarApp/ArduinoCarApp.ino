@@ -11,6 +11,8 @@ U8GLIB_SSD1306_128X64 u8g(U8G_I2C_OPT_DEV_0|U8G_I2C_OPT_FAST);  // Dev 0, Fast I
 #define NONE 0
 #define PRESS 1
 
+#define HOST "192.168.43.124"
+
 Button button(4);
 uint8_t keyCode;
 
@@ -21,30 +23,37 @@ unsigned long count;
 
 void sendToEsp8266(String toSend){
     SerialESP8266.println(toSend);
-    delay(300);
+    delay(2000);
 }
 
-void setupWeb(){  
+bool setupCard(){
   //Verificamos si el ESP8266 responde
   sendToEsp8266("AT");
   if(!SerialESP8266.find("OK")){
     Serial.println("ERROR WITH ESP8266");
-    return;  
+    return false;  
   }
   Serial.println("Conection with ESP8266");
   sendToEsp8266("AT+CWMODE=1");
   if(!SerialESP8266.find("OK")){
     Serial.println("Error on CWMODE");
-    return;  
+    return false;  
   }
-  sendToEsp8266("AT+CWJAP=\"UNAL\",\"\"");
+  return true;
+}
+
+void setupWifi(String wifiName, String password){  
+  
+  sendToEsp8266("AT+CWJAP=\"" + wifiName + "\",\"" + password  + "\"");
   if(!SerialESP8266.find("OK")){
     Serial.println("Error conecting to WIFI");
     return;  
   }
-  Serial.println("Conected to wifi");
+  Serial.println("Conected to wifi"); 
+}
 
-  sendToEsp8266("AT+CIPSTART=\"TCP\",\"10.203.177.80\",12345");
+void sendRequestToServer(String placa, int km){
+  sendToEsp8266("AT+CIPSTART=\"TCP\",\"" + HOST + "\",12345");
   if(!SerialESP8266.find("OK")){
     Serial.println("Error conectiong to TCP");
     return;  
@@ -57,18 +66,15 @@ void setupWeb(){
     Serial.println("Error sending size");
     return;  
   }
-  sendToEsp8266(req);
-  
-  
-  
-  
+  sendToEsp8266(req); 
 }
 
 void setup() {
   SerialESP8266.begin(9600);
   Serial.begin(9600);
   SerialESP8266.setTimeout(2000);
-  setupWeb();
+  setupCard();
+  setupWifi("FLDSMDFR", "2334445555");
   /*
   u8g.setFont(u8g_font_osr29);
   //u8g.setFont(u8g_font_9x18);

@@ -1,3 +1,5 @@
+setx _JAVA_OPTIONS -Djava.net.preferIPv4Stack=true
+
 GET /php/ejemplos/ej10destino.php?a=23&b=56 HTTP/1.1
 www.aprende-web.net
 
