@@ -23,7 +23,7 @@ unsigned long count;
 
 void sendToEsp8266(String toSend){
     SerialESP8266.println(toSend);
-    delay(2000);
+    delay(3000);
 }
 
 bool setupCard(){
@@ -53,14 +53,15 @@ void setupWifi(String wifiName, String password){
 }
 
 void sendRequestToServer(String placa, int km){
-  sendToEsp8266("AT+CIPSTART=\"TCP\",\"" + HOST + "\",12345");
+  sendToEsp8266("AT+CIPSTART=\"TCP\",\"" + String(HOST) + "\",12345");
   if(!SerialESP8266.find("OK")){
     Serial.println("Error conectiong to TCP");
     return;  
   }
   Serial.println("Conected to TCP");
-  String req = "GET /device/test\nHost: 10.203.177.80\n\n";
-
+  String req = "GET /device/km/" + placa + "/" + km + " HTTP/1.1\nHost: " + String(HOST) + "\n\n";
+  Serial.println("Sending:\n" + req + "\nlen: " + String(req.length()));
+  
   sendToEsp8266("AT+CIPSEND=" + String(req.length()));
   if(!SerialESP8266.find(">")){
     Serial.println("Error sending size");
@@ -75,6 +76,7 @@ void setup() {
   SerialESP8266.setTimeout(2000);
   setupCard();
   setupWifi("FLDSMDFR", "2334445555");
+  sendRequestToServer("GKX037", 600);
   /*
   u8g.setFont(u8g_font_osr29);
   //u8g.setFont(u8g_font_9x18);
@@ -85,28 +87,7 @@ void setup() {
 
 }
 
-void sendData(){
-    /*String st = "GET /device/test/" + count ;
-    st = st + " HTTP/1.1";
-    printSerial("AT+CIPSEND=" + st.length());
-    if(SerialESP8266.find(">")){
-      printSerial(st);
-    }*/
-    
-}
-
-void loop() {
-
-  if (SerialESP8266.available()) Serial.write(SerialESP8266.read());
-  if (Serial.available()) SerialESP8266.write(Serial.read());
-  /*u8g.firstPage();
-  do pageCount();
-  while( u8g.nextPage() ); 
-
-  sendData();
-  readKeys();
-  taskCount();*/
-}
+void loop() {}
 
 void readKeys() {
   if (!button.read()) keyCode = PRESS;
