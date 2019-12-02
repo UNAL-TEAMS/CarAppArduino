@@ -29,7 +29,7 @@ unsigned long Km ;
 
 void sendToEsp8266(String toSend){
     SerialESP8266.println(toSend);
-    delay(2000);
+    delay(3000);
 }
 
 bool setupCard(){
@@ -65,8 +65,9 @@ void sendRequestToServer(String placa, int km){
     return;  
   }
   Serial.println("Conected to TCP");
-  String req = "GET /device/test\nHost: 10.203.177.80\n\n";
-
+  String req = "GET /device/km/" + placa + "/" + km + " HTTP/1.1\nHost: " + String(HOST) + "\n\n";
+  Serial.println("Sending:\n" + req + "\nlen: " + String(req.length()));
+  
   sendToEsp8266("AT+CIPSEND=" + String(req.length()));
   if(!SerialESP8266.find(">")){
     Serial.println("Error sending size");
