@@ -1,8 +1,10 @@
 #include <SoftwareSerial.h>
+#include <Button.h>
+#include <TimerOne.h>
 SoftwareSerial SerialESP8266(3,2); // RX, TX
 
 #include "U8glib.h"
-
+bool printMen=true;
 U8GLIB_SSD1306_128X64 u8g(U8G_I2C_OPT_DEV_0|U8G_I2C_OPT_FAST);  // Dev 0, Fast I2C / TWI
 
 //----BUTTON---
@@ -10,15 +12,19 @@ U8GLIB_SSD1306_128X64 u8g(U8G_I2C_OPT_DEV_0|U8G_I2C_OPT_FAST);  // Dev 0, Fast I
 
 #define NONE 0
 #define PRESS 1
-
+String WiFiName = "";
+String WiFiPass = "";
+String plate = "";
 #define HOST "192.168.43.124"
 
-Button button(4);
+
+Button button(4, true, true, 25); 
+//Button button(4);
 uint8_t keyCode;
 
 
 //----GENERAL----
-unsigned long count; 
+unsigned long Km ; 
 
 
 void sendToEsp8266(String toSend){
@@ -42,9 +48,9 @@ bool setupCard(){
   return true;
 }
 
-void setupWifi(String wifiName, String password){  
+void setupWifi(){  
   
-  sendToEsp8266("AT+CWJAP=\"" + wifiName + "\",\"" + password  + "\"");
+  sendToEsp8266("AT+CWJAP=\"" + WiFiName + "\",\"" + WiFiPass  + "\"");
   if(!SerialESP8266.find("OK")){
     Serial.println("Error conecting to WIFI");
     return;  
@@ -53,7 +59,7 @@ void setupWifi(String wifiName, String password){
 }
 
 void sendRequestToServer(String placa, int km){
-  sendToEsp8266("AT+CIPSTART=\"TCP\",\"" + HOST + "\",12345");
+  sendToEsp8266("AT+CIPSTART=\"TCP\",\"" + String(HOST) + "\",12345");
   if(!SerialESP8266.find("OK")){
     Serial.println("Error conectiong to TCP");
     return;  
@@ -74,38 +80,99 @@ void setup() {
   Serial.begin(9600);
   SerialESP8266.setTimeout(2000);
   setupCard();
-  setupWifi("FLDSMDFR", "2334445555");
-  /*
+  
   u8g.setFont(u8g_font_osr29);
   //u8g.setFont(u8g_font_9x18);
-  button.begin();
+//button.begin();
   keyCode = NONE;
 
-  count = 0;*/
+  //Timer1.initialize(10000000);//timing for 1000 ms
+//  Timer1.attachInterrupt(TimingISR);//declare the interrupt serve routine:TimingISR
+  
 
 }
-
-void sendData(){
-    /*String st = "GET /device/test/" + count ;
-    st = st + " HTTP/1.1";
-    printSerial("AT+CIPSEND=" + st.length());
-    if(SerialESP8266.find(">")){
-      printSerial(st);
-    }*/
-    
+void printStatus(){
+  Serial.print("Wifi: ");
+  Serial.println(WiFiName);
+  Serial.print("Contraseña: ");
+  Serial.println(WiFiPass);
+  Serial.print("Placa: ");
+  Serial.println(plate);
+}
+void printPlateKm(){
+  Serial.print("Placa: ");
+  Serial.println(plate);
+  Serial.print("Km: ");
+  Serial.println(Km);
+  
+}
+void printMenu(){
+  Serial.println("Menu:");
+  Serial.println("1. Configurar WIFI");
+  Serial.println("2. Configurar Placa");
+  Serial.println("3. Imprimir Estado ");
+  Serial.println("4. Empezar");
+  printMen=false;
+}
+void setWifi(){
+  Serial.print("Wifi: ");
+  Serial.readString();
+  while(!Serial.available()){};
+  WiFiName=Serial.readString();
+  WiFiName.trim();
+  Serial.print(WiFiName);
+  Serial.print("\nPass: ");
+  while(!Serial.available()){};
+  WiFiPass=Serial.readString();
+  WiFiPass.trim();
+  Serial.print(WiFiPass);
+  Serial.println("");
+  
+  setupWifi();
+}
+void setPlate(){
+  Serial.print("Placa: ");
+  Serial.readString();
+  while(!Serial.available()){};
+  plate = Serial.readString();
+  plate.trim();
+  Serial.println(plate);
+  Serial.read();
 }
 
 void loop() {
+  if(printMen)printMenu();
+  static bool menu = true;
+  while((!Serial.available())&&menu){};
+  if(menu){ 
+    switch(Serial.read()){
+      
+      case '1':
+        setWifi(); 
+        printMen=true;
+        break;
+      case '2':
+        setPlate();
+        printMen=true;
+      break;
+      case '3':
+        printStatus();
+        printMen=true;
+      break;
+      case '4':
+      //Timer1.initialize(10000000);//timing for 1000 ms
+  //  Timer1.attachInterrupt(TimingISR);//declare the interrupt serve routine:TimingISR
+        menu=false;
+      break;
+    }
+  }
 
-  if (SerialESP8266.available()) Serial.write(SerialESP8266.read());
-  if (Serial.available()) SerialESP8266.write(Serial.read());
-  /*u8g.firstPage();
+  u8g.firstPage();
   do pageCount();
   while( u8g.nextPage() ); 
 
-  sendData();
   readKeys();
-  taskCount();*/
+  taskCount();
 }
 
 void readKeys() {
@@ -115,12 +182,11 @@ void readKeys() {
 
 void taskCount(){
   switch(keyCode){
-    case PRESS: count += 10;
+    case PRESS: Km += 10;
   }
 }
 
-
 void pageCount(){
   u8g.setPrintPos(0, 40);
-  u8g.print(count);
+  u8g.print(Km);
 }
